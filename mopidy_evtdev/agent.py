@@ -38,7 +38,12 @@ class EvtDevAgent(object):
             evdev.ecodes.KEY_PREVIOUSSONG: self._prev_track,
             evdev.ecodes.KEY_VOLUMEUP: self._volume_up,
             evdev.ecodes.KEY_VOLUMEDOWN: self._volume_down,
-            evdev.ecodes.KEY_MUTE: self._mute
+            evdev.ecodes.KEY_MUTE: self._mute,
+            evdev.ecodes.KEY_NUMERIC_1: self._key_1, # TODO generate these
+            evdev.ecodes.KEY_NUMERIC_2: self._key_2,
+            evdev.ecodes.KEY_NUMERIC_3: self._key_3,
+            evdev.ecodes.KEY_NUMERIC_4: self._key_4,
+            evdev.ecodes.KEY_NUMERIC_5: self._key_5
         }
 
         # This will initiate a refresh of all attached devices and
@@ -180,6 +185,48 @@ class EvtDevAgent(object):
     def _prev_track(self):
         self.core.playback.previous()
         logger.info('Selected previous track')
+
+    def _playlist(self, playlist):
+        logger.info("EvtDevAgent looking up %s", playlist)
+        pl = self.core.playlists.lookup(playlist).get()
+        logger.info("EvtDevAgent found %s", pl)
+        if pl is None:
+            return
+        self._stop()
+        logger.info("Clearing tracklist")
+        self.core.tracklist.clear()
+        logger.debug("EvtDevAgent Tracks are %s", pl.tracks)
+        self.core.tracklist.add(pl.tracks)
+        logger.info("EvtDevAgent Playing...")
+        self._play_pause()
+
+    def _stream(self, uri):
+        # TODO maybe combine with _playlist()?
+        try:
+            logger.info("Clearing tracklist")
+            self.core.tracklist.clear()
+            self.core.tracklist.add(None, None, uri)
+            logger.info("EvtDevAgent Playing...")
+            self._play_pause()
+        except Exception, e:
+            logger.info("EvtDevAgent problem adding: %s", e)
+            raise
+
+    # TODO load these from config file
+    def _key_1(self):
+        self._playlist("spotify:user:xxxx:playlist:xxxxxx")
+
+    def _key_2(self):
+        self._playlist("spotify:user:xxxxx:playlist:xxxxxxxxx")
+
+    def _key_3(self):
+        self._stream("http://kidspublicradio2.got.net:8000/pipsqueaks")
+
+    def _key_4(self):
+        self._stream("http://pub1.diforfree.org:8000/di_chillout_hi")
+
+    def _key_5(self):
+        self._stream("http://bbcmedia.ic.llnwd.net/stream/bbcmedia_radio1_mf_p")
 
     @staticmethod
     def _open_device_list(devices):
